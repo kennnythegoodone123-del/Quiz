@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How Well Do You Know Me?</title>
+    <style>
+        :root {
+            --black: #000000;
+            --white: #ffffff;
+            --red: #e63946;
+            --gray: #f4f4f4;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--white);
+            color: var(--black);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 400px;
+            padding: 40px;
+            border: 2px solid var(--black);
+            box-shadow: 10px 10px 0px var(--black);
+            background: var(--white);
+            text-align: center;
+        }
+
+        h1 { font-weight: 900; text-transform: uppercase; letter-spacing: -1px; margin-bottom: 30px; }
+        h2 { font-size: 1.2rem; margin-bottom: 20px; }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 2px solid var(--black);
+            box-sizing: border-box;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--black);
+            color: var(--white);
+            border: none;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover { background-color: var(--red); }
+
+        .section { display: none; }
+        .active { display: block; }
+
+        .question-box { text-align: left; margin-bottom: 25px; }
+        .question-box label { display: block; font-weight: bold; margin-bottom: 8px; color: var(--red); }
+
+        .results-list { text-align: left; margin-top: 20px; }
+        .result-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; }
+        
+        .owner-btn {
+            margin-top: 20px;
+            background: none;
+            color: var(--black);
+            text-decoration: underline;
+            font-size: 0.8rem;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="login-sec" class="section active">
+        <h1>DO YOU<br>KNOW ME?</h1>
+        <p>Enter your name to start the quiz.</p>
+        <input type="text" id="username" placeholder="Your Name">
+        <button onclick="startQuiz()">Start Quiz</button>
+        <button class="owner-btn" onclick="showOwner()">View Owner Dashboard</button>
+    </div>
+
+    <div id="quiz-sec" class="section">
+        <h2 id="q-title">Question 1</h2>
+        <div class="question-box">
+            <label id="q-label">Question text goes here?</label>
+            <input type="text" id="answer" placeholder="Your answer...">
+        </div>
+        <button onclick="nextQuestion()">Next Question</button>
+    </div>
+
+    <div id="result-sec" class="section">
+        <h1 style="color: var(--red);">FINISHED</h1>
+        <p>Thanks for playing! I've saved your answers for the owner to see.</p>
+        <button onclick="location.reload()">Back to Start</button>
+    </div>
+
+    <div id="owner-sec" class="section">
+        <h1>DASHBOARD</h1>
+        <div id="results-container" class="results-list">
+            </div>
+        <button onclick="clearData()" style="background: var(--red); margin-top: 10px;">Clear All Data</button>
+        <button class="owner-btn" onclick="location.reload()">Back</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        "What’s my favorite color?",
+        "What is my real name?",
+        "When is my birthday?",
+        "What is my hobby?",
+        "Favorite Artist?",
+        "If I had a catchphrase, what would it be?"
+    ];
+
+    let currentQuestion = 0;
+    let currentUser = "";
+    let userAnswers = [];
+
+    function startQuiz() {
+        currentUser = document.getElementById('username').value;
+        if (currentUser.trim() === "") return alert("Please enter your name!");
+        
+        document.getElementById('login-sec').classList.remove('active');
+        document.getElementById('quiz-sec').classList.add('active');
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        document.getElementById('q-title').innerText = `Question ${currentQuestion + 1}`;
+        document.getElementById('q-label').innerText = questions[currentQuestion];
+        document.getElementById('answer').value = "";
+    }
+
+    function nextQuestion() {
+        let ans = document.getElementById('answer').value;
+        if (ans.trim() === "") return alert("Don't leave it blank!");
+
+        userAnswers.push(ans);
+        currentQuestion++;
+
+        if (currentQuestion < questions.length) {
+            loadQuestion();
+        } else {
+            saveAndFinish();
+        }
+    }
+
+    function saveAndFinish() {
+        let allData = JSON.parse(localStorage.getItem('quizResults')) || [];
+        allData.push({ name: currentUser, answers: userAnswers });
+        localStorage.setItem('quizResults', JSON.stringify(allData));
+
+        document.getElementById('quiz-sec').classList.remove('active');
+        document.getElementById('result-sec').classList.add('active');
+    }
+
+    function showOwner() {
+        document.getElementById('login-sec').classList.remove('active');
+        document.getElementById('owner-sec').classList.add('active');
+        
+        const container = document.getElementById('results-container');
+        const data = JSON.parse(localStorage.getItem('quizResults')) || [];
+
+        if (data.length === 0) {
+            container.innerHTML = "<p>No one has taken the quiz yet.</p>";
+        } else {
+            container.innerHTML = data.map(user => `
+                <div class="result-item">
+                    <strong>${user.name}</strong>
+                    <span>${user.answers.length} answers saved</span>
+                </div>
+                <div style="font-size: 0.8rem; margin-bottom: 10px; color: #666;">
+                    ${user.answers.join(' | ')}
+                </div>
+            `).join('');
+        }
+    }
+
+    function clearData() {
+        if(confirm("Delete all responses?")) {
+            localStorage.removeItem('quizResults');
+            showOwner();
+        }
+    }
+</script>
+
+</body>
+</html>
